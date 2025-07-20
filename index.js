@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
 
-// פרטי Gmail (זהירות: הסיסמה היא סיסמה לאפליקציה)
+// פרטי המייל שלך (סיסמת אפליקציה בלבד!)
 const emailUser = 'mf0583275242@gmail.com';
 const emailPass = 'gjzrznpbzvzfsmzw';
 const emailTo   = 'm0544195828@gmail.com';
@@ -19,7 +19,7 @@ function sendEmailAlert(text) {
   const mailOptions = {
     from: emailUser,
     to: emailTo,
-    subject: '📢 עדכון חדש',
+    subject: '📢 עדכון חדש מהאתר',
     text: text
   };
 
@@ -47,9 +47,9 @@ let sentUpdates = fs.existsSync(historyFile)
     const page = await browser.newPage();
     try {
       await page.goto('https://www.kore.co.il/mplus', { waitUntil: 'networkidle2' });
-      await page.waitForSelector('div.post p', { timeout: 5000 });
+      await page.waitForSelector('p[data-v-3339d2fa]', { timeout: 8000 });
 
-      const updates = await page.$$eval('div.post p', elements =>
+      const updates = await page.$$eval('p[data-v-3339d2fa]', elements =>
         elements.map(el => el.textContent.trim()).filter(Boolean)
       );
 
@@ -73,3 +73,4 @@ let sentUpdates = fs.existsSync(historyFile)
   await checkForUpdates();
   setInterval(checkForUpdates, 10000); // כל 10 שניות
 })();
+
