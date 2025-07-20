@@ -2,10 +2,10 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
 
-// פרטי Gmail ישירות בקוד:
-const emailUser = 'mf0583275242@gmail.com'; // כתובת שולח
-const emailPass = 'gjzrznpbzvzfsmzw';       // סיסמת אפליקציה מגוגל
-const emailTo   = 'm0544195828@gmail.com,another@example.com'; // נמענים
+// פרטי Gmail (זהירות: הסיסמה היא סיסמה לאפליקציה)
+const emailUser = 'mf0583275242@gmail.com';
+const emailPass = 'gjzrznpbzvzfsmzw';
+const emailTo   = 'm0544195828@gmail.com';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -19,7 +19,7 @@ function sendEmailAlert(text) {
   const mailOptions = {
     from: emailUser,
     to: emailTo,
-    subject: '📢 עדכון חדש מהאתר',
+    subject: '📢 עדכון חדש',
     text: text
   };
 
@@ -32,7 +32,10 @@ function sendEmailAlert(text) {
   });
 }
 
-let lastUpdate = null;
+const historyFile = 'sent-updates.txt';
+let sentUpdates = fs.existsSync(historyFile)
+  ? fs.readFileSync(historyFile, 'utf-8').split('\n').filter(Boolean)
+  : [];
 
 (async () => {
   const browser = await puppeteer.launch({
@@ -40,19 +43,25 @@ let lastUpdate = null;
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
-  async function checkForUpdate() {
+  async function checkForUpdates() {
     const page = await browser.newPage();
     try {
       await page.goto('https://www.kore.co.il/mplus', { waitUntil: 'networkidle2' });
       await page.waitForSelector('div.post p', { timeout: 5000 });
-      const update = await page.$eval('div.post p', el => el.textContent.trim());
 
-      if (update && update !== lastUpdate) {
-        const logEntry = `[${new Date().toLocaleString()}] ${update}`;
-        console.log(logEntry);
-        fs.appendFileSync('updates.txt', logEntry + '\n');
-        sendEmailAlert(update);
-        lastUpdate = update;
+      const updates = await page.$$eval('div.post p', elements =>
+        elements.map(el => el.textContent.trim()).filter(Boolean)
+      );
+
+      for (const update of updates) {
+        if (!sentUpdates.includes(update)) {
+          const logEntry = `[${new Date().toLocaleString()}] ${update}`;
+          console.log(logEntry);
+          fs.appendFileSync('updates.txt', logEntry + '\n');
+          fs.appendFileSync(historyFile, update + '\n');
+          sendEmailAlert(update);
+          sentUpdates.push(update);
+        }
       }
     } catch (err) {
       console.error('שגיאה בשליפה:', err.message);
@@ -61,6 +70,6 @@ let lastUpdate = null;
     }
   }
 
-  await checkForUpdate();
-  setInterval(checkForUpdate, 10000);
+  await checkForUpdates();
+  setInterval(checkForUpdates, 10000); // כל 10 שניות
 })();
