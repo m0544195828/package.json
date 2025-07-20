@@ -1,25 +1,32 @@
-name: Run kore-alerts every 10 minutes
+name: Run kore-alerts every 5 minutes
 
 on:
   schedule:
-    - cron: "*/10 * * * *"  # כל 10 דקות
-  workflow_dispatch:        # מאפשר הרצה ידנית מה-GitHub
+    - cron: "*/5 * * * *"  # כל 5 דקות
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
 
-      - name: Install dependencies
-        run: npm install
+    - name: Install dependencies
+      run: npm install
 
-      - name: Run alert script
-        run: node index.js
+    - name: Run script
+      run: node index.js
+
+    - name: Commit updated history
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add history.json
+        git commit -m "🕒 Update sent history [bot]" || echo "No changes"
+        git push || echo "No changes to push"
