@@ -2,7 +2,6 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
 
-// פרטי המייל שלך (סיסמת אפליקציה בלבד!)
 const emailUser = 'mf0583275242@gmail.com';
 const emailPass = 'gjzrznpbzvzfsmzw';
 const emailTo   = 'm0544195828@gmail.com';
@@ -32,10 +31,10 @@ function sendEmailAlert(text) {
   });
 }
 
-const historyFile = 'sent-updates.txt';
-let sentUpdates = fs.existsSync(historyFile)
-  ? fs.readFileSync(historyFile, 'utf-8').split('\n').filter(Boolean)
-  : [];
+const historyFile = 'history.json';
+let history = fs.existsSync(historyFile)
+  ? JSON.parse(fs.readFileSync(historyFile))
+  : { sent: [] };
 
 (async () => {
   const browser = await puppeteer.launch({
@@ -53,24 +52,28 @@ let sentUpdates = fs.existsSync(historyFile)
         elements.map(el => el.textContent.trim()).filter(Boolean)
       );
 
+      let newSent = false;
+
       for (const update of updates) {
-        if (!sentUpdates.includes(update)) {
+        if (!history.sent.includes(update)) {
           const logEntry = `[${new Date().toLocaleString()}] ${update}`;
           console.log(logEntry);
-          fs.appendFileSync('updates.txt', logEntry + '\n');
-          fs.appendFileSync(historyFile, update + '\n');
           sendEmailAlert(update);
-          sentUpdates.push(update);
+          history.sent.push(update);
+          newSent = true;
         }
+      }
+
+      if (newSent) {
+        fs.writeFileSync(historyFile, JSON.stringify(history, null, 2));
       }
     } catch (err) {
       console.error('שגיאה בשליפה:', err.message);
     } finally {
       await page.close();
+      await browser.close();
     }
   }
 
   await checkForUpdates();
-  setInterval(checkForUpdates, 10000); // כל 10 שניות
 })();
-
