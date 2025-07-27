@@ -1,12 +1,12 @@
-name: Run kore-alerts every 5 minutes
+name: Run kore-newsflash every 5 minutes
 
 on:
   schedule:
-    - cron: "*/5 * * * *"  # כל 5 דקות
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
-  build:
+  run-script:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,5 +28,5 @@ jobs:
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add history.json
-        git commit -m "🕒 Update sent history [bot]" || echo "No changes"
+        git commit -m "🕒 Update history" || echo "No changes"
         git push || echo "No changes to push"
